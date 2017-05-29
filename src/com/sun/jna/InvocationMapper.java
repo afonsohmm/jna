@@ -1,3 +1,25 @@
+/**
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
+ */
 package com.sun.jna;
 
 import java.lang.reflect.InvocationHandler;
@@ -17,7 +39,7 @@ import java.lang.reflect.Method;
  * into a call to <code>_xstat</code> with a slight rearrangement of arguments.
  * A mapper for the GNU C library might look like the following:<br>
  * <blockquote>
- * <code><pre>
+ * <pre><code>
  * new InvocationMapper() {
  *     public InvocationHandler getInvocationHandler(NativeLibrary lib, Method m) {
  *         if (m.getName().equals("stat")) {
@@ -26,7 +48,7 @@ import java.lang.reflect.Method;
  *                 public Object invoke(Object proxy, Method method, Object[] args) {
  *                     Object[] newArgs = new Object[args.length+1];
  *                     System.arraycopy(args, 0, newArgs, 1, args.length);
- *                     newArgs[0] = new Integer(3); // _xstat version
+ *                     newArgs[0] = Integer.valueOf(3); // _xstat version
  *                     return f.invoke(newArgs);
  *                 }
  *             };
@@ -34,12 +56,12 @@ import java.lang.reflect.Method;
  *         return null;
  *     } 
  * } 
- * </pre></code>
+ * </code></pre>
  * </blockquote>
  * Another situation is where a header provides a function-like macro or
  * inline function definition.  
  * <blockquote>
- * <code><pre>
+ * <pre><code>
  * // Original C code (macro and inline variations)
  * #define allocblock(x) malloc(x * 1024)
  * static inline void* allocblock(size_t x) { return malloc(x * 1024); }
@@ -59,7 +81,7 @@ import java.lang.reflect.Method;
  *         return null;
  *     } 
  * } 
- * </pre></code>
+ * </code></pre>
  * </blockquote>
  * @author twall
  */

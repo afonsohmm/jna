@@ -1,15 +1,26 @@
 /* Copyright (c) 2007 Wayne Meissner, All Rights Reserved
  * Copyright (c) 2007-2013 Timothy Wall, All Rights Reserved
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * <p/>
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.  
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 
 package com.sun.jna;
@@ -18,16 +29,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Map.Entry;
-
 import junit.framework.TestCase;
 
 
 public class PointerTest extends TestCase {
-    
+
     private static final String UNICODE = "[\u0444]";
 
     public void testGetNativeLong() {
@@ -122,6 +128,27 @@ public class PointerTest extends TestCase {
                      Arrays.asList(p.getStringArray(0, 2, ENCODING)));
     }
 
+    public void testGetWideStringArray() {
+        Pointer p = new Memory(Pointer.SIZE*3);
+        final String VALUE1 = getName() + UNICODE;
+        final String VALUE2 = getName() + "2" + UNICODE;
+
+        p.setPointer(0, new NativeString(VALUE1, true).getPointer());
+        p.setPointer(Pointer.SIZE, new NativeString(VALUE2, true).getPointer());
+        p.setPointer(Pointer.SIZE*2, null);
+
+        assertEquals("Wrong null-terminated String array",
+                     Arrays.asList(new String[] { VALUE1, VALUE2 }),
+                     Arrays.asList(p.getWideStringArray(0)));
+
+        assertEquals("Wrong length-specified String array (1)",
+                     Arrays.asList(new String[] { VALUE1 }),
+                     Arrays.asList(p.getWideStringArray(0, 1)));
+        assertEquals("Wrong length-specified String array (2)",
+                     Arrays.asList(new String[] { VALUE1, VALUE2 }),
+                     Arrays.asList(p.getWideStringArray(0, 2)));
+    }
+
     public void testReadPointerArray() {
         Pointer mem = new Memory(Pointer.SIZE * 2);
         Pointer[] p = new Pointer[2];
@@ -161,26 +188,26 @@ public class PointerTest extends TestCase {
         assertNull("Array element should be null", arr[0]);
     }
 
-    private Object defaultArg(Class type) {
+    private Object defaultArg(Class<?> type) {
         if (type == boolean.class || type == Boolean.class) return Boolean.FALSE;
-        if (type == byte.class || type == Byte.class) return new Byte((byte)0);
-        if (type == char.class || type == Character.class) return new Character((char)0);
-        if (type == short.class || type == Short.class) return new Short((short)0);
-        if (type == int.class || type == Integer.class) return new Integer(0);
-        if (type == long.class || type == Long.class) return new Long(0);
-        if (type == float.class || type == Float.class) return new Float(0);
-        if (type == double.class || type == Double.class) return new Double(0);
+        if (type == byte.class || type == Byte.class) return Byte.valueOf((byte)0);
+        if (type == char.class || type == Character.class) return Character.valueOf((char)0);
+        if (type == short.class || type == Short.class) return Short.valueOf((short)0);
+        if (type == int.class || type == Integer.class) return Integer.valueOf(0);
+        if (type == long.class || type == Long.class) return Long.valueOf(0L);
+        if (type == float.class || type == Float.class) return Float.valueOf(0);
+        if (type == double.class || type == Double.class) return Double.valueOf(0);
         if (type == NativeLong.class) return new NativeLong(0);
         return null;
     }
 
     public void testOpaquePointer() throws Exception {
         Pointer p = Pointer.createConstant(0);
-        Class cls = p.getClass();
+        Class<?> cls = p.getClass();
         Method[] methods = cls.getMethods();
         for (int i=0;i < methods.length;i++) {
             Method m = methods[i];
-            Class[] argTypes = m.getParameterTypes();
+            Class<?>[] argTypes = m.getParameterTypes();
             try {
                 Object[] args = new Object[argTypes.length];
                 for (int arg=0;arg < args.length;arg++) {

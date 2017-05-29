@@ -1,25 +1,33 @@
 /* Copyright (c) 2012 Tobias Wolf, All Rights Reserved
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 package com.sun.jna.platform.win32.COM;
 
 import java.util.Date;
 
 import com.sun.jna.platform.win32.Guid.CLSID;
-import com.sun.jna.platform.win32.OaIdl.VARIANT_BOOL;
 import com.sun.jna.platform.win32.OleAuto;
 import com.sun.jna.platform.win32.Variant.VARIANT;
-import com.sun.jna.platform.win32.WinDef.LONG;
-import com.sun.jna.platform.win32.WinDef.SHORT;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -132,7 +140,7 @@ public class COMLateBindingObject extends COMBindingBaseObject {
             IDispatch iDispatch) {
         VARIANT.ByReference result = new VARIANT.ByReference();
         this.oleMethod(OleAuto.DISPATCH_PROPERTYGET, result,
-                this.getIDispatch(), propertyName);
+                iDispatch, propertyName);
 
         return ((IDispatch) result.getValue());
     }
@@ -149,7 +157,7 @@ public class COMLateBindingObject extends COMBindingBaseObject {
         this.oleMethod(OleAuto.DISPATCH_PROPERTYGET, result,
                 this.getIDispatch(), propertyName);
 
-        return (((VARIANT_BOOL) result.getValue()).intValue() != 0);
+        return result.booleanValue();
     }
 
     /**
@@ -179,7 +187,7 @@ public class COMLateBindingObject extends COMBindingBaseObject {
         this.oleMethod(OleAuto.DISPATCH_PROPERTYGET, result,
                 this.getIDispatch(), propertyName);
 
-        return ((LONG) result.getValue()).intValue();
+        return result.intValue();
     }
 
     /**
@@ -194,7 +202,7 @@ public class COMLateBindingObject extends COMBindingBaseObject {
         this.oleMethod(OleAuto.DISPATCH_PROPERTYGET, result,
                 this.getIDispatch(), propertyName);
 
-        return ((SHORT) result.getValue()).shortValue();
+        return result.shortValue();
     }
 
     /**
@@ -209,7 +217,7 @@ public class COMLateBindingObject extends COMBindingBaseObject {
         this.oleMethod(OleAuto.DISPATCH_PROPERTYGET, result,
                 this.getIDispatch(), propertyName);
 
-        return result.getValue().toString();
+        return result.stringValue();
     }
 
     /**
@@ -370,6 +378,12 @@ public class COMLateBindingObject extends COMBindingBaseObject {
     protected void invokeNoReply(String methodName, IDispatch dispatch,
             VARIANT arg1, VARIANT arg2) {
         this.oleMethod(OleAuto.DISPATCH_METHOD, null, dispatch, methodName,
+                new VARIANT[] { arg1, arg2 });
+    }
+
+    protected void invokeNoReply(String methodName, COMLateBindingObject comObject,
+            VARIANT arg1, VARIANT arg2) {
+        this.oleMethod(OleAuto.DISPATCH_METHOD, null, comObject.getIDispatch(), methodName,
                 new VARIANT[] { arg1, arg2 });
     }
 

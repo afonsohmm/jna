@@ -1,34 +1,47 @@
 /* Copyright (c) 2013 Tobias Wolf, All Rights Reserved
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 package com.sun.jna.platform.win32.COM;
 
+import com.sun.jna.LastErrorException;
 import java.util.ArrayList;
 
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Advapi32;
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.Advapi32Util.EnumKey;
 import com.sun.jna.platform.win32.Advapi32Util.InfoKey;
 import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.OaIdl.EXCEPINFO;
-import com.sun.jna.platform.win32.WTypes.BSTR;
+import com.sun.jna.platform.win32.Ole32;
+import com.sun.jna.platform.win32.W32Errors;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HRESULT;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.platform.win32.WinReg.HKEYByReference;
 import com.sun.jna.ptr.IntByReference;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class COMUtils.
  * 
@@ -38,6 +51,8 @@ public abstract class COMUtils {
 
     /** The Constant CO_E_NOTINITIALIZED. */
     public static final int S_OK = 0;
+    public static final int S_FALSE = 1;
+    public static final int E_UNEXPECTED=0x8000FFFF;
 
     /**
      * Succeeded.
@@ -58,10 +73,7 @@ public abstract class COMUtils {
      * @return true, if successful
      */
     public static boolean SUCCEEDED(int hr) {
-        if (hr == S_OK)
-            return true;
-        else
-            return false;
+        return hr >= 0;
     }
 
     /**
@@ -83,10 +95,7 @@ public abstract class COMUtils {
      * @return true, if successful
      */
     public static boolean FAILED(int hr) {
-        if (hr != S_OK)
-            return true;
-        else
-            return false;
+        return hr < 0;
     }
 
     /**
@@ -112,8 +121,14 @@ public abstract class COMUtils {
     public static void checkRC(HRESULT hr, EXCEPINFO pExcepInfo,
             IntByReference puArgErr) {
         if (FAILED(hr)) {
-            String formatMessageFromHR = Kernel32Util.formatMessage(hr);
-            throw new COMException(formatMessageFromHR, pExcepInfo, puArgErr);
+            String formatMessage;
+            try {
+                formatMessage = Kernel32Util.formatMessage(hr) + "(HRESULT: " + Integer.toHexString(hr.intValue()) + ")";
+            } catch (LastErrorException ex) {
+                // throws if HRESULT can't be resolved
+                formatMessage = "(HRESULT: " + Integer.toHexString(hr.intValue()) + ")";
+            }
+            throw new COMException(formatMessage, pExcepInfo, puArgErr);
         }
     }
 
@@ -131,10 +146,10 @@ public abstract class COMUtils {
         try {
             // open root key
             phkResult = Advapi32Util.registryGetKey(WinReg.HKEY_CLASSES_ROOT,
-                    "CLSID", WinNT.KEY_ALL_ACCESS);
+                    "CLSID", WinNT.KEY_READ);
             // open subkey
             InfoKey infoKey = Advapi32Util.registryQueryInfoKey(
-                    phkResult.getValue(), WinNT.KEY_ALL_ACCESS);
+                    phkResult.getValue(), WinNT.KEY_READ);
 
             for (int i = 0; i < infoKey.lpcSubKeys.getValue(); i++) {
                 EnumKey enumKey = Advapi32Util.registryRegEnumKey(
@@ -144,9 +159,9 @@ public abstract class COMUtils {
                 COMInfo comInfo = new COMInfo(subKey);
 
                 phkResult2 = Advapi32Util.registryGetKey(phkResult.getValue(),
-                        subKey, WinNT.KEY_ALL_ACCESS);
+                        subKey, WinNT.KEY_READ);
                 InfoKey infoKey2 = Advapi32Util.registryQueryInfoKey(
-                        phkResult2.getValue(), WinNT.KEY_ALL_ACCESS);
+                        phkResult2.getValue(), WinNT.KEY_READ);
 
                 for (int y = 0; y < infoKey2.lpcSubKeys.getValue(); y++) {
                     EnumKey enumKey2 = Advapi32Util.registryRegEnumKey(
@@ -185,6 +200,36 @@ public abstract class COMUtils {
         }
 
         return comInfos;
+    }
+
+    /**
+     * Check if COM was initialized correctly. The initialization status is not changed!
+     *
+     * <p>This is a debug function, not for normal usage!</p>
+     * 
+     * @return whether COM has been initialized
+     */
+    public static boolean comIsInitialized() {
+        WinNT.HRESULT hr = Ole32.INSTANCE.CoInitializeEx(Pointer.NULL, Ole32.COINIT_MULTITHREADED);
+        if (hr.equals(W32Errors.S_OK)) {
+            // User failed - uninitialize again and return false
+            Ole32.INSTANCE.CoUninitialize();
+            return false;
+        } else if (hr.equals(W32Errors.S_FALSE)) {
+            // OK Variant 1 - User initialized COM with same threading module as
+            // in this check. According to MSDN CoUninitialize needs to be called
+            // in this case.
+            Ole32.INSTANCE.CoUninitialize();
+            return true;
+        } else if (hr.intValue() == W32Errors.RPC_E_CHANGED_MODE) {
+            return true;
+        }
+        // If another result than the checked ones above happens handling is
+        // delegated to the "normal" COM exception handling and a COMException
+        // will be raised.
+        COMUtils.checkRC(hr);
+        // The return will not be met, as COMUtils#checkRC will raise an exception
+        return false;
     }
 
     /**

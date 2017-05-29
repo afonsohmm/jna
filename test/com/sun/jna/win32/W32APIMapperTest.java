@@ -1,14 +1,25 @@
 /* Copyright (c) 2007-2013 Timothy Wall, All Rights Reserved
+ *
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
  * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * You can freely decide which license you want to apply to 
+ * the project.
  * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.  
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 package com.sun.jna.win32;
 
@@ -23,22 +34,29 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 
 public class W32APIMapperTest extends TestCase {
-
-    final String UNICODE = "[\u0444]";
+    // Unicode Character 'SINGLE RIGHT-POINTING ANGLE QUOTATION MARK': ›
+    //
+    // byte encoding in CP1250-CP1258 is 155
+    //
+    // The requirement is, that the encoding is present in many native windows
+    // encodings and outside the ASCII range
+    final String UNICODE = "[\u203a]";
     final String MAGIC = "magic" + UNICODE;
-    
+
     public static void main(String[] args) {
         junit.textui.TestRunner.run(W32APIMapperTest.class);
     }
 
     public interface UnicodeLibrary extends Library {
         public static class TestStructure extends Structure {
+            public static final List<String> FIELDS = createFieldsOrder("string", "string2", "bool", "bool2");
             public String string;
             public String string2;
             public boolean bool;
             public boolean bool2;
-            protected List getFieldOrder() {
-                return Arrays.asList(new String[] { "string", "string2", "bool", "bool2" }); 
+            @Override
+            protected List<String> getFieldOrder() {
+                return FIELDS;
             }
         }
         String returnWStringArgument(String arg);
@@ -47,30 +65,30 @@ public class W32APIMapperTest extends TestCase {
     }
     public interface ASCIILibrary extends Library {
         public static class TestStructure extends Structure {
+            public static final List<String> FIELDS = Arrays.asList("string", "string2", "bool", "bool2");
             public String string;
             public String string2;
             public boolean bool;
             public boolean bool2;
-            protected List getFieldOrder() {
-                return Arrays.asList(new String[] { "string", "string2", "bool", "bool2" }); 
+            @Override
+            protected List<String> getFieldOrder() {
+                return FIELDS;
             }
         }
         String returnStringArgument(String arg);
         boolean returnInt32Argument(boolean arg);
     }
-    
+
     UnicodeLibrary unicode;
     ASCIILibrary ascii;
-    
+
+    @Override
     protected void setUp() {
-        unicode = (UnicodeLibrary)
-            Native.loadLibrary("testlib", UnicodeLibrary.class, 
-            		W32APIOptions.UNICODE_OPTIONS);
-        ascii = (ASCIILibrary)
-            Native.loadLibrary("testlib", ASCIILibrary.class, 
-            		W32APIOptions.ASCII_OPTIONS);
+        unicode = Native.loadLibrary("testlib", UnicodeLibrary.class, W32APIOptions.UNICODE_OPTIONS);
+        ascii = Native.loadLibrary("testlib", ASCIILibrary.class, W32APIOptions.ASCII_OPTIONS);
     }
-    
+
+    @Override
     protected void tearDown() {
         unicode = null;
         ascii = null;
@@ -83,7 +101,7 @@ public class W32APIMapperTest extends TestCase {
         }
         Pointer p = Pointer.createConstant(Pointer.SIZE == 8 ? -1 : 0xFFFFFFFFL);
         assertTrue("Wrong value: " + p, p.toString().endsWith(EXPECTED));
-                     
+
     }
 
     public void testBooleanArgumentConversion() {
@@ -91,33 +109,33 @@ public class W32APIMapperTest extends TestCase {
                    unicode.returnInt32Argument(true));
         assertFalse("Wrong boolean FALSE argument conversion (unicode)",
                    unicode.returnInt32Argument(false));
-             
+
         assertTrue("Wrong boolean TRUE argument conversion (ASCII)",
                    ascii.returnInt32Argument(true));
         assertFalse("Wrong boolean FALSE argument conversion (ASCII)",
                     ascii.returnInt32Argument(false));
     }
-    
+
     public void testUnicodeMapping() {
         assertEquals("Strings should correspond to wide strings",
                      MAGIC, unicode.returnWStringArgument(MAGIC));
         String[] args = { "one", "two" };
         assertEquals("String arrays should be converted to wchar_t*[] and back",
-                     args[0], 
+                     args[0],
                      unicode.returnWideStringArrayElement(args, 0));
     }
-    
+
     public void testASCIIMapping() {
         assertEquals("Strings should correspond to C strings",
                      MAGIC, ascii.returnStringArgument(MAGIC));
     }
-    
+
     public void testUnicodeStructureSize() {
         UnicodeLibrary.TestStructure s = new UnicodeLibrary.TestStructure();
         assertEquals("Wrong structure size",
                      Pointer.SIZE*2+8, s.size());
     }
-    
+
     public void testASCIIStructureSize() {
         ASCIILibrary.TestStructure s = new ASCIILibrary.TestStructure();
         assertEquals("Wrong structure size",
@@ -130,14 +148,14 @@ public class W32APIMapperTest extends TestCase {
         s.write();
         assertEquals("Wrong value written for FALSE", 0, s.getPointer().getInt(Pointer.SIZE*2));
         assertEquals("Wrong value written for TRUE", 1, s.getPointer().getInt(Pointer.SIZE*2+4));
-    }        
+    }
     public void testASCIIStructureWriteBoolean() {
         ASCIILibrary.TestStructure s = new ASCIILibrary.TestStructure();
         s.bool2 = true;
         s.write();
         assertEquals("Wrong value written for FALSE", 0, s.getPointer().getInt(Pointer.SIZE*2));
         assertEquals("Wrong value written for TRUE", 1, s.getPointer().getInt(Pointer.SIZE*2+4));
-    }        
+    }
     public void testUnicodeStructureReadBoolean() {
         UnicodeLibrary.TestStructure s = new UnicodeLibrary.TestStructure();
         s.getPointer().setInt(Pointer.SIZE*2, 1);
@@ -145,7 +163,7 @@ public class W32APIMapperTest extends TestCase {
         s.read();
         assertTrue("Wrong value read for TRUE", s.bool);
         assertFalse("Wrong value read for FALSE", s.bool2);
-    }    
+    }
     public void testASCIIStructureReadBoolean() {
         ASCIILibrary.TestStructure s = new ASCIILibrary.TestStructure();
         s.getPointer().setInt(Pointer.SIZE*2, 1);
@@ -153,7 +171,7 @@ public class W32APIMapperTest extends TestCase {
         s.read();
         assertTrue("Wrong value read for TRUE", s.bool);
         assertFalse("Wrong value read for FALSE", s.bool2);
-    }    
+    }
     public void testUnicodeStructureWriteString() {
         UnicodeLibrary.TestStructure s = new UnicodeLibrary.TestStructure();
         s.string = null;

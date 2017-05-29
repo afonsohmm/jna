@@ -1,14 +1,25 @@
 /* Copyright (c) 2010 Daniel Doubrovkine, All Rights Reserved
  * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
  * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.  
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 package com.sun.jna.platform.win32;
 
@@ -29,8 +40,7 @@ import com.sun.jna.win32.W32APIOptions;
  */
 public interface Netapi32 extends StdCallLibrary {
 	
-	Netapi32 INSTANCE = (Netapi32) Native.loadLibrary("Netapi32",
-			Netapi32.class, W32APIOptions.UNICODE_OPTIONS);
+	Netapi32 INSTANCE = Native.loadLibrary("Netapi32", Netapi32.class, W32APIOptions.DEFAULT_OPTIONS);
 
 	/**
 	 * Retrieves join status information for the specified computer.
@@ -52,7 +62,7 @@ public interface Netapi32 extends StdCallLibrary {
 	/**
 	 * Frees the memory that the NetApiBufferAllocate function allocates.
 	 * 
-	 * @param buffer
+	 * @param buffer buffer
 	 * @return If the function succeeds, the return value is NERR_Success. If
 	 *         the function fails, the return value is a system error code.
 	 */
@@ -426,6 +436,44 @@ public interface Netapi32 extends StdCallLibrary {
 	 * @return
 	 *  If the function succeeds, the return value is NERR_Success.
 	 */
-	public int NetUserGetInfo( String servername, String username, int level, PointerByReference bufptr );
-	
+	public int NetUserGetInfo(String servername, String username, int level, PointerByReference bufptr);
+
+    /**
+     * Shares a server resource.
+     * 
+     * @param servername [in]
+     *  Pointer to a string that specifies the DNS or NetBIOS name of the remote server on which the function is to execute.
+     *  If this parameter is NULL, the local computer is used.
+     * @param level [in]
+     *  Specifies the information level of the data. This parameter can be one of the following values:
+     *  2 - Specifies information about the shared resource, including the name of the resource, type and permissions, and number of connections.
+     *  The buf parameter points to a SHARE_INFO_2 structure.
+     *  502 - Specifies information about the shared resource, including the name of the resource, type and permissions, number of connections, and other pertinent information.
+     *  The buf parameter points to a SHARE_INFO_502 structure.
+     *  503 - Specifies information about the shared resource, including the name of the resource, type and permissions, number of connections, and other pertinent information.
+     *  The buf parameter points to a SHARE_INFO_503 structure.
+     * @param buf [in]
+     *  Pointer to the buffer that specifies the data. The format of this data depends on the value of the <code>level</code> parameter.
+     *  For more information, see Network Management Function Buffers (https://msdn.microsoft.com/en-us/library/windows/desktop/aa370676(v=vs.85).aspx)
+     * @param parm_err [out]
+     *  Pointer to a value that receives the index of the first member of the share information structure that causes the ERROR_INVALID_PARAMETER error. If this parameter is NULL, the
+     *  index is not returned on error. For more information, see the NetShareSetInfo function.
+     * @return If the function succeeds, the return value is NERR_Success. If the function fails, the return value can be an error code as seen on MSDN.
+     */
+    public int NetShareAdd(String servername, int level, Pointer buf, IntByReference parm_err);
+
+    /**
+     * Deletes a share name from a server's list of shared resources, disconnecting all connections to the shared resource.
+     * 
+     * @param servername [in]
+     *  Pointer to a string that specifies the DNS or NetBIOS name of the remote server on which the function is to execute.
+     *  If this parameter is NULL, the local computer is used.
+     * @param netname [in]
+     *  Pointer to a string that specifies the name of the share to delete.
+     * @param reserved
+     *  Reserved, must be zero.
+     * @return If the function succeeds, the return value is LMErr.NERR_Success.
+     *  If the function fails, the return value can be an error code as seen on MSDN.
+     */
+    public int NetShareDel(String servername, String netname, int reserved);
 }

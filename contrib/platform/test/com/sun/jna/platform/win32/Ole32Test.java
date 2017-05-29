@@ -106,4 +106,36 @@ public class Ole32Test extends TestCase {
 	    assertEquals(WinError.S_OK, Ole32.INSTANCE.CLSIDFromProgID("jpegfile", clsid));
 	    assertEquals("{25336920-03F9-11CF-8FD0-00AA00686F13}", clsid.toGuidString());
 	}
+
+    public void testCoTaskMemAlloc() {
+        Pointer ptr = Ole32.INSTANCE.CoTaskMemAlloc(256);
+
+        assertTrue(!ptr.equals(Pointer.NULL));
+
+        Ole32.INSTANCE.CoTaskMemFree(ptr);
+    }
+
+    public void testCoTaskMemRealloc() {
+        Pointer ptr = Ole32.INSTANCE.CoTaskMemAlloc(256);
+
+        assertTrue(!ptr.equals(Pointer.NULL));
+
+        ptr = Ole32.INSTANCE.CoTaskMemRealloc(ptr, 128);
+
+        assertTrue(!ptr.equals(Pointer.NULL));
+
+        Ole32.INSTANCE.CoTaskMemFree(ptr);
+    }
+    
+    public void testOleFunctions() {
+        HRESULT initResult = Ole32.INSTANCE.OleInitialize(Pointer.NULL);
+        
+        assertTrue(W32Errors.SUCCEEDED(initResult));
+        
+        // For a real test, a test component will be needed
+        Ole32.INSTANCE.OleFlushClipboard();
+        Ole32.INSTANCE.OleRun(Pointer.NULL);
+        
+        Ole32.INSTANCE.CoUninitialize();
+    }
 }

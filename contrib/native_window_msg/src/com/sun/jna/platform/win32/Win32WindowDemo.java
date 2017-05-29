@@ -1,39 +1,44 @@
 /* Copyright (c) 2012 Tobias Wolf, All Rights Reserved
  * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
  * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.  
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 
 package com.sun.jna.platform.win32;
 
-import com.sun.jna.WString;
-import com.sun.jna.platform.win32.DBT;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_DEVICEINTERFACE;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_HANDLE;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_HDR;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_OEM;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_PORT;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_VOLUME;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.HMODULE;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.LPARAM;
 import com.sun.jna.platform.win32.WinDef.LRESULT;
 import com.sun.jna.platform.win32.WinDef.WPARAM;
-import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.HDEVNOTIFY;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import com.sun.jna.platform.win32.WinUser.WNDCLASSEX;
 import com.sun.jna.platform.win32.WinUser.WindowProc;
-import com.sun.jna.platform.win32.Wtsapi32;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -46,7 +51,7 @@ public class Win32WindowDemo implements WindowProc {
 	 */
 	public Win32WindowDemo() {
 		// define new window class
-		WString windowClass = new WString("MyWindowClass");
+		String windowClass = new String("MyWindowClass");
 		HMODULE hInst = Kernel32.INSTANCE.GetModuleHandle("");
 
 		WNDCLASSEX wClass = new WNDCLASSEX();

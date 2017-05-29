@@ -1,14 +1,25 @@
 /* Copyright (c) 2013 Tobias Wolf, All Rights Reserved
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 package com.sun.jna.platform.win32.COM.tlb.imp;
 
@@ -97,21 +108,18 @@ public class TlbCoClass extends TlbBase {
             FUNCDESC funcDesc = typeInfoUtil.getFuncDesc(i);
             
             TlbAbstractMethod method = null;
-            if (funcDesc.invkind.equals(INVOKEKIND.INVOKE_FUNC)) {
-                if(this.isVTableMode())
+            if (funcDesc.invkind.value == INVOKEKIND.INVOKE_FUNC.value) {
+                if(this.isVTableMode()) {
                     method = new TlbFunctionVTable(i, index, typeLibUtil, funcDesc, typeInfoUtil);
-                else
+                } else {
                     method = new TlbFunctionDispId(i, index, typeLibUtil, funcDesc, typeInfoUtil);
-            } else if (funcDesc.invkind.equals(INVOKEKIND.INVOKE_PROPERTYGET)) {
-                method = new TlbPropertyGet(i, index, typeLibUtil, funcDesc,
-                        typeInfoUtil);
-            } else if (funcDesc.invkind.equals(INVOKEKIND.INVOKE_PROPERTYPUT)) {
-                method = new TlbPropertyPut(i, index, typeLibUtil, funcDesc,
-                        typeInfoUtil);
-            } else if (funcDesc.invkind
-                    .equals(INVOKEKIND.INVOKE_PROPERTYPUTREF)) {
-                method = new TlbPropertyPut(i, index, typeLibUtil, funcDesc,
-                        typeInfoUtil);
+            }
+            } else if (funcDesc.invkind.value == INVOKEKIND.INVOKE_PROPERTYGET.value) {
+                method = new TlbPropertyGet(i, index, typeLibUtil, funcDesc, typeInfoUtil);
+            } else if (funcDesc.invkind.value == INVOKEKIND.INVOKE_PROPERTYPUT.value) {
+                method = new TlbPropertyPut(i, index, typeLibUtil, funcDesc, typeInfoUtil);
+            } else if (funcDesc.invkind.value == INVOKEKIND.INVOKE_PROPERTYPUTREF.value) {
+                method = new TlbPropertyPut(i, index, typeLibUtil, funcDesc, typeInfoUtil);
             }
                 
             if(!isReservedMethod(method.getMethodName()))

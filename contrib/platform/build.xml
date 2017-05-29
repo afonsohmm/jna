@@ -63,32 +63,66 @@
     nbproject/build-impl.xml file.
 
     -->
-
-    <target name="-do-jar-without-manifest">
-       <jar jarfile="${dist.jar}" compress="${jar.compress}">
-         <manifest>
-           <attribute name="Main-Class" value="com.sun.jna.Native"/>
-           <attribute name="Manifest-Version" value="1.0"/>
-           <attribute name="Implementation-Title" value="${impl.title}"/>
-           <attribute name="Implementation-Vendor" value="${vendor}"/>
-           <attribute name="Implementation-Version" value="${impl.version}"/>
-           <attribute name="Specification-Title" value="${spec.title}"/>
-           <attribute name="Specification-Vendor" value="${spec.vendor}"/>
-           <attribute name="Specification-Version" value="${spec.version}"/>
-           <!--
-              OSGi Bundle attributes
-              See http://www.osgi.org/Specifications/Reference
-            -->
-           <attribute name="Bundle-Category" value="jni"/>
-           <attribute name="Bundle-ManifestVersion" value="2"/>
-           <attribute name="Bundle-Name" value="jna-platform"/>
-           <attribute name="Bundle-Description" value="JNA Platform Library"/>
-           <attribute name="Bundle-SymbolicName" value="com.sun.jna.platform"/>
-           <attribute name="Bundle-Version" value="${osgi.version}"/>
-           <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
-           <attribute name="Bundle-Vendor" value="${vendor}"/>
-           <attribute name="Require-Bundle" value="com.sun.jna;bundle-version=&quot;${osgi.version}&quot;"/>
-           <attribute name="Export-Package"
+    
+    <!-- the -init-macrodef-copylibs target superseeds the target defined in
+    build-impl.xml. The classpath that the base copylibs target adds to the
+    MANIFEST.MF interferes with spring-boot and tomcat   -->
+    <target name="-init-macrodef-copylibs">
+        <macrodef name="copylibs" uri="http://www.netbeans.org/ns/j2se-project/3">
+            <attribute default="${manifest.file}" name="manifest"/>
+            <element name="customize" optional="true"/>
+            <sequential>
+                <property location="${build.classes.dir}" name="build.classes.dir.resolved"/>
+                <pathconvert property="run.classpath.without.build.classes.dir">
+                    <path path="${run.classpath}"/>
+                    <map from="${build.classes.dir.resolved}" to=""/>
+                </pathconvert>
+                <pathconvert pathsep=" " property="jar.classpath">
+                    <path path="${run.classpath.without.build.classes.dir}"/>
+                    <chainedmapper>
+                        <flattenmapper/>
+                        <filtermapper>
+                            <replacestring from=" " to="%20"/>
+                        </filtermapper>
+                        <globmapper from="*" to="lib/*"/>
+                    </chainedmapper>
+                </pathconvert>
+                <taskdef classname="org.netbeans.modules.java.j2seproject.copylibstask.CopyLibs" classpath="${libs.CopyLibs.classpath}" name="copylibs"/>
+                <copylibs compress="${jar.compress}" excludeFromCopy="${copylibs.excludes}" index="${jar.index}" indexMetaInf="${jar.index.metainf}" jarfile="${dist.jar}" manifest="@{manifest}" rebase="${copylibs.rebase}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
+                    <fileset dir="${build.classes.dir}" excludes="${dist.archive.excludes}"/>
+                    <manifest>
+                        <!--<attribute name="Class-Path" value="${jar.classpath}"/>-->
+                        <customize/>
+                    </manifest>
+                </copylibs>
+            </sequential>
+        </macrodef>
+    </target>
+    
+    <target name="-pre-jar">
+        <tempfile deleteonexit="true" destdir="${build.dir}" property="tmp.manifest.file"/>
+        <manifest file="${tmp.manifest.file}" mode="replace">
+            <attribute name="Manifest-Version" value="1.0"/>
+            <attribute name="Implementation-Title" value="${impl.title}"/>
+            <attribute name="Implementation-Vendor" value="${vendor}"/>
+            <attribute name="Implementation-Version" value="${impl.version}"/>
+            <attribute name="Specification-Title" value="${spec.title}"/>
+            <attribute name="Specification-Vendor" value="${spec.vendor}"/>
+            <attribute name="Specification-Version" value="${spec.version}"/>
+            <!--
+               OSGi Bundle attributes
+               See http://www.osgi.org/Specifications/Reference
+             -->
+            <attribute name="Bundle-Category" value="jni"/>
+            <attribute name="Bundle-ManifestVersion" value="2"/>
+            <attribute name="Bundle-Name" value="jna-platform"/>
+            <attribute name="Bundle-Description" value="JNA Platform Library"/>
+            <attribute name="Bundle-SymbolicName" value="com.sun.jna.platform"/>
+            <attribute name="Bundle-Version" value="${osgi.version}"/>
+            <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
+            <attribute name="Bundle-Vendor" value="${vendor}"/>
+            <attribute name="Require-Bundle" value="com.sun.jna;bundle-version=&quot;${osgi.version}&quot;"/>
+            <attribute name="Export-Package"
                    value="
 com.sun.jna.platform,
 com.sun.jna.platform.dnd,
@@ -100,24 +134,23 @@ com.sun.jna.platform.win32.COM.tlb,
 com.sun.jna.platform.win32.COM.tlb.imp,
 com.sun.jna.platform.wince
 "/>
-         </manifest>
-         <fileset dir="${build.classes.dir}"/>
-       </jar>
+        </manifest>
     </target>
 
     <target name="test" depends="init,compile,compile-test,-pre-test-run" description="Run platform unit tests.">
       <echo>Running platform tests: ${test.src.dir}</echo>
       <property name="test.fork" value="yes"/>
-      <property name="build.test.results.dir.abs" location="${build.test.results.dir}"/>
-      <mkdir dir="${build.test.results.dir.abs}"/>
-      <echo>Saving test results in ${build.test.results.dir.abs}</echo>
-      <condition property="tests.platform" value="**/mac/**">
+      <property name="reports.junit" location="${build}/reports/junit/${os.prefix}"/>
+      <property name="results.junit" location="${build}/junit-results/${os.prefix}"/>
+      <mkdir dir="${results.junit}"/>
+      <echo>Saving test results in ${results.junit}</echo>
+      <condition property="tests.platform" value="**/mac/**/*Test.java">
         <os family="mac"/>
       </condition>
-      <condition property="tests.platform" value="**/win32/**">
+      <condition property="tests.platform" value="**/win32/**/*Test.java">
         <os family="windows"/>
       </condition>
-      <condition property="tests.platform" value="**/unix/**">
+      <condition property="tests.platform" value="**/unix/**/*Test.java">
         <os family="unix"/>
       </condition>
       <property name="tests.platform" value=""/>
@@ -151,23 +184,23 @@ com.sun.jna.platform.wince
         <classpath><path path="${run.test.classpath}"/><path path="${file.reference.jna.build}/test-classes"/></classpath>
         <formatter type="brief" usefile="false"/>
         <formatter type="xml"/>
-        <batchtest todir="${build.test.results.dir}">
+        <batchtest todir="${results.junit}">
           <fileset dir="${test.src.dir}" excludes="${tests.exclude-patterns}">
             <!-- Until StructureFieldOrderTest gets fixed up a little -->
             <exclude name="**/StructureFieldOrderTest.java"/>
-            <include name="com/sun/jna/platform/*Test.java"/>
+            <exclude name="com/sun/jna/platform/AbstractWin32TestSupport.java"/>
             <include name="${tests.platform}"/>
             <exclude name="${tests.exclude}"/>
           </fileset>
         </batchtest>
       </junit>
-      <junitreport todir="${build.test.results.dir}">
-	<fileset dir="${build.test.results.dir}">
+      <junitreport todir="${results.junit}">
+	<fileset dir="${results.junit}">
 	  <include name="TEST-*.xml"/>
 	</fileset>
-	<report todir="${build.test.results.dir}"/>
+	<report todir="${reports.junit}"/>
       </junitreport>
-      <echo message="View test report in file://${build.test.results.dir.abs}/index.html" />
+      <echo message="View test report in file://${reports.junit}/index.html" />
       <fail if="testfailure">One or more tests failed</fail>
     </target>
 

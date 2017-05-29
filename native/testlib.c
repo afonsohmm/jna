@@ -1,14 +1,25 @@
 /* Copyright (c) 2007-2013 Timothy Wall, All Rights Reserved
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * <p/>
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.  
+ * The contents of this file is dual-licensed under 2 
+ * alternative Open Source/Free licenses: LGPL 2.1 or later and 
+ * Apache License 2.0. (starting with JNA version 4.0.0).
+ * 
+ * You can freely decide which license you want to apply to 
+ * the project.
+ * 
+ * You may obtain a copy of the LGPL License at:
+ * 
+ * http://www.gnu.org/licenses/licenses.html
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "LGPL2.1".
+ * 
+ * You may obtain a copy of the Apache License at:
+ * 
+ * http://www.apache.org/licenses/
+ * 
+ * A copy is also included in the downloadable source code package
+ * containing JNA, in file "AL2.0".
  */
 
 /* Native library implementation to support JUnit tests. */
@@ -559,7 +570,6 @@ getStructureSize(unsigned index) {
   return STRUCT_SIZES[index];
 }
 
-extern void exit(int);
 #define FIELD(T,X,N) (((T*)X)->field ## N)
 #define OFFSET(T,X,N) (int)(((char*)&FIELD(T,X,N))-((char*)&FIELD(T,X,0)))
 #define V8(N) (N+1)
@@ -756,8 +766,8 @@ callCallbackWithByReferenceArgument(int (*func)(int arg, int* result), int arg, 
 }
 
 EXPORT char*
-callStringCallback(char* (*func)(char* arg), char* arg) {
-  return (*func)(arg);
+callStringCallback(char* (*func)(const char* arg, const char* arg2), const char* arg, const char* arg2) {
+  return (*func)(arg, arg2);
 }
 
 EXPORT char**
@@ -766,8 +776,8 @@ callStringArrayCallback(char** (*func)(char** arg), char** arg) {
 }
 
 EXPORT wchar_t*
-callWideStringCallback(wchar_t* (*func)(wchar_t* arg), wchar_t* arg) {
-  return (*func)(arg);
+callWideStringCallback(wchar_t* (*func)(const wchar_t* arg, const wchar_t* arg2), const wchar_t* arg, const wchar_t* arg2) {
+  return (*func)(arg, arg2);
 }
 
 struct cbstruct {
@@ -856,12 +866,14 @@ fillDoubleBuffer(double *buf, int len, double value) {
   return len;
 }
 
+#include "ffi.h"
+
 EXPORT int32_t
-addInt32VarArgs(const char *fmt, ...) {
+addVarArgs(const char *fmt, ...) {
   va_list ap;
   int32_t sum = 0;
   va_start(ap, fmt);
-  
+
   while (*fmt) {
     switch (*fmt++) {
     case 'd':
@@ -872,6 +884,10 @@ addInt32VarArgs(const char *fmt, ...) {
       break;
     case 'c':
       sum += (int) va_arg(ap, int);
+      break;
+    case 'f': // float (promoted to ‘double’ when passed through ‘...’)
+    case 'g': // double
+      sum += (int) va_arg(ap, double);
       break;
     default:
       break;
@@ -904,6 +920,16 @@ modifyStructureVarArgs(const char* fmt, ...) {
 
 EXPORT char *
 returnStringVarArgs(const char *fmt, ...) {
+  char* cp;
+  va_list ap;
+  va_start(ap, fmt);
+  cp = va_arg(ap, char *);
+  va_end(ap);
+  return cp;
+}
+
+EXPORT char *
+returnStringVarArgs2(const char *fmt, ...) {
   char* cp;
   va_list ap;
   va_start(ap, fmt);
@@ -950,15 +976,15 @@ callInt32StdCallCallback(int32_t (__stdcall *func)(int32_t arg, int32_t arg2),
 }
 
 EXPORT int32_t __stdcall
-callBugCallback(void (__stdcall *func)(long,int,double,
-                                       const char*,const char*,
-                                       double,long,
-                                       double,long,long,long),
-                long arg1, int arg2, double arg3,
-                const char* arg4, const char* arg5,
-                double arg6, long arg7,
-                double arg8, long arg9,
-                long arg10, long arg11) {
+callManyArgsStdCallCallback(void (__stdcall *func)(long,int,double,
+                                                   const char*,const char*,
+                                                   double,long,
+                                                   double,long,long,long),
+                            long arg1, int arg2, double arg3,
+                            const char* arg4, const char* arg5,
+                            double arg6, long arg7,
+                            double arg8, long arg9,
+                            long arg10, long arg11) {
   void* sp1 = NULL;
   void* sp2 = NULL;
   int value = -1;
@@ -983,9 +1009,26 @@ callBugCallback(void (__stdcall *func)(long,int,double,
 
 #include <jni.h>
 #include <math.h>
+#include <sys/types.h>
+#include "dispatch.h"
 JNIEXPORT jdouble JNICALL
-Java_com_sun_jna_PerformanceTest_00024JNI_cos(JNIEnv *env, jclass cls, jdouble x) {
+Java_com_sun_jna_PerformanceTest_00024JNILibrary_cos(JNIEnv *UNUSED(env), jclass UNUSED(cls), jdouble x) {
   return cos(x);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_sun_jna_PerformanceTest_00024JNILibrary_getpid(JNIEnv *UNUSED(env), jclass UNUSED(cls)) {
+#ifdef _WIN32
+  extern int _getpid();
+  return _getpid();
+#else
+  return getpid();
+#endif
+}
+
+EXPORT jclass
+returnClass(JNIEnv *env, jobject arg) {
+  return (*env)->GetObjectClass(env, arg);
 }
 
 #ifdef __cplusplus
